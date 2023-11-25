@@ -4,6 +4,7 @@
 //
 // Created by CheyeonPark on 2023/11/21.
 //
+
 #define BOARDSTATUS_OK		1
 #define BOARDSTATUS_NOK		0
 

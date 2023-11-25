@@ -86,10 +86,17 @@ int board_getBoardStatus(int pos)
 }
 int board_getBoardCoin(int pos)
 {
-	int coin=board_coin[pos];
-	board_coin[pos]=0;
-	return board_coin[pos];//return 배열요소 
-	
+    int coin = board_coin[pos];
+
+    // 랜덤하게 코인을 주기로 결정
+    if (coin == 0 || (rand() % 4 == 0)) {
+        int newCoin = rand() % MAX_COIN + 1;  // 랜덤한 코인을 생성
+        board_coin[pos] = newCoin;
+        return newCoin;
+    }
+
+    board_coin[pos] = 0;  // 코인을 주지 않는 경우
+    return coin;
 }
 //상어 위치 
 int board_getSharkPosition(void);

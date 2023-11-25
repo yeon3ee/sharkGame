@@ -2,7 +2,7 @@
 // main.c
 // sharkGame
 //
-// Created by CheyeonPark on 2023/11/21.~2023/11/23
+// Created by CheyeonPark on 2023/11/21.~2023/11/23. 
 //
 
 #include <stdio.h>
@@ -16,6 +16,7 @@
 #define N_BOARD		15 
 #define MAX_COIN_PER_BOARD		5
 //player 정의 
+#define N_PLAYER		3
 #define PLAYERSTATUS_LIVE		0
 #define PLAYERSTATUS_DIE		1
 #define PLAYERSTATUS_END		2//숫자는 서로 다르게만 설정되면 됨. 
@@ -32,6 +33,7 @@ void opening(void)
 	printf("==========================================================\n");
 	printf("**********************************************************\n");
 	printf("                  Happy SharkGame                 \n");
+	printf("                Who is the Winner!!                \n");
 	printf("**********************************************************\n");
 	printf("==========================================================\n\n\n");
 
@@ -42,7 +44,55 @@ int rolldie(void)
 	return rand()%MAX_DIE+1;
 }
 
+int game_end(void)
+{
+    int i;
+    int flag_end=1;
+    
+    for (i = 0; i < N_PLAYER; i++)
+    {
+        if (player_status[i] == PLAYERSTATUS_LIVE)
+        {
+            flag_end=0;
+			break;// Game is not over, at least one player is alive
+        }
+    }
+    return flag_end; // Game is over, all players are either dead or have reached the end
+}
+
+int getAlivePlayer(void)
+{
+    int i;
+    int cnt = 0;
+    for (i = 0; i < N_PLAYER; i++)
+    {
+        if (player_status[i] == PLAYERSTATUS_END)
+            cnt++;
+    }
+    return cnt;
+}
+
+char *getWinner(void)
+{
+    int i;
+    int winner = 0;
+    int max_coin = -1;
+
+    for (i = 0; i < N_PLAYER; i++)
+    {
+        if (player_status[i] == PLAYERSTATUS_LIVE && player_coin[i] > max_coin)
+        {
+            max_coin = player_coin[i];
+            winner = i;
+        }
+    }
+
+    return player_name[winner];
+}
+
+
 void printPlayerPosition(int player)
+
 { 
 	int i;
 	for(i=0;i<N_BOARD;i++)
@@ -52,6 +102,7 @@ void printPlayerPosition(int player)
 			printf("%c", player_name[player][0]);
 		else
 		{
+			
 			if(board_getBoardStatus(i)==BOARDSTATUS_NOK)
 			printf("X");
 			else
@@ -82,56 +133,6 @@ void checkDie(void)
 			player_status[i]=PLAYERSTATUS_DIE;
 }
 
-int game_end(void)
-{
-	{
-		int i;
-	   	int flag_end=1;
-	   	for(i=0;i<N_PLAYER;i++)
-	   	{
-	   		if(player_status[i]==PLAYERSTATUS_LIVE)
-	   		{
-	   			flag_end=0;
-	   			break;
-			   }
-		}
-	   	
-	   	return flag_end;
-		   
-	}
-	    
-	return 0;
-}
-
-int getAlivePlayer(void)
-{
-	int i;
-	int cnt=0;
-	for(i=0;i<N_PLAYER;i++)
-	{
-		if(player_status[i]==PLAYERSTATUS_END)
-			cnt++;
-	}
-	return cnt;
-}
-
-int getWinner(void)
-{
-	int i;
-	int winner=0;
-	int max_coin=-1;
-	
-	for(i=0;i<N_PLAYER;i++)
-	{
-		if(player_coin[i]>max_coin)
-		{
-			max_coin=player_coin[i];
-			winner=i;
-		}
-	}
-	return winner;
-}
-
 int main(int argc, char *argv[]) {
 	int pos=0;
 	int turn=0;
@@ -143,10 +144,10 @@ int main(int argc, char *argv[]) {
 	//1. board 초기화&플레이어 이름 결정 
 	board_initBoard();
 	//2-1. 플레이어의 상태 출력
-	  
+	
 	   
 	//1-2: initialize player
-	for(i=0;i<N_PLAYER;i++)
+	for(i=0;i<N_PLAYER;i++) 
 	{
 		player_position[i]=0;
 		player_coin[i]=0;
@@ -184,22 +185,31 @@ int main(int argc, char *argv[]) {
 		
 	   //2-3. 이동
 	   player_position[turn]+=step; 
+	   
 	   if(player_position[turn]>=N_BOARD)
 	   {
 	   	player_position[turn]=N_BOARD-1;
-	   	player_status[turn]=PLAYERSTATUS_END;
 	   }
+	   
 	   if(player_position[turn]==N_BOARD-1)
-	   		player_status[turn]=PLAYERSTATUS_END;
-	   printf("player position is %i\n", player_position[turn]);
+	   		{
+	   			player_status[turn]=PLAYERSTATUS_END;
+	   			printf("player %s reached to the end!! (coin :%d)\n",  player_name[turn], player_coin[turn]);
+			}
+		printf("Die result : %d, player moved to %d!\n", step, player_position[turn]);
+	   		
 	   
 	   //2-4. 동전줍기
-	  coinResult = board_getBoardCoin(player_position[turn]);
-player_coin[turn] += coinResult;
-printf("%s collected %i coins.\n", player_name[turn], coinResult);
-	   
+	   coinResult=board_getBoardCoin(player_position[turn]);
+	   if(coinResult>0)
+	   {
+	   	player_coin[turn]+=coinResult;
+	   	printf("-> Lucky! %s got %i coins \n",player_name[turn],coinResult);
+	   }
+       else
+       	printf("-> No coins at this location!\n");
 	   //2-5. 다음턴
-	   turn=(turn+1)%N_PLAYER;
+	   turn = (turn + 1) % N_PLAYER;
 	   //turn+1은 안됨. 플레이어수가 무한대로 늘어나게됨. 0.1.2로 반복될 수 있게 %N_PLAYER해줌 (wrap around)
 	   //2-6. if(조건: 모든 플레이어가 한번씩 턴을 돔)
 	   if(turn==0)
@@ -214,8 +224,14 @@ printf("%s collected %i coins.\n", player_name[turn], coinResult);
 	   		
 	} while(!game_end());
 	//3. 정리(승자 계산, 출력 등) 
-	   int game_end(void);
-	   int getAlivePlayer(void);
-	   int getWinner(void);
-	   
+	int alivePlayers=getAlivePlayer();
+	char *winner = getWinner();
+	
+	printf("!!Game End!!\n"); //게임종료 
+	printf("%d players are alive!\n",alivePlayers); //생존자 출력 
+	printf("Winner is player %s\n", winner); //승자 출력 
+	
+	
+	return 0;	
 }
+
